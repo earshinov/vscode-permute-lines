@@ -1,0 +1,9 @@
+# Ignore everything
+# https://github.com/Microsoft/vscode-vsce/issues/12#issuecomment-306078884
+*
+*/**
+
+# Whitelist
+!out/extension.js
+!package.json
+!README.md
