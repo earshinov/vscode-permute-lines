@@ -78,21 +78,22 @@ function transformLines(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
 
 	// lineRanges <- sorted array of vscode ranges
 	var lineRanges = lineNumbers.map(function(lineNumber) {
-		return document.lineAt(lineNumber).range;
+		var line = document.lineAt(lineNumber);
+		return { range: line.range, rangeIncludingLineBreak: line.rangeIncludingLineBreak };
 	});
 
 	var lineRangeTexts = lineRanges.map(function(lineRange) {
-		return document.getText(lineRange);
+		return document.getText(lineRange.range);
 	});
 	lineRangeTexts = callback(lineRangeTexts);
 
 	for (var i = 0; i < lineRanges.length && i < lineRangeTexts.length; ++i)
-		edit.replace(lineRanges[i], lineRangeTexts[i]);
+		edit.replace(lineRanges[i].range, lineRangeTexts[i]);
 	for (var i = lineRangeTexts.length; i < lineRanges.length; ++i)
-		edit.replace(lineRanges[i], "");
+		edit.delete(lineRanges[i].rangeIncludingLineBreak); // delete the line altogether
 	if (lineRangeTexts.length > lineRanges.length) {
 		var appendix = "\n" + lineRangeTexts.slice(lineRanges.length).join("\n");
-		edit.insert(lineRanges[lineRanges.length - 1].end, appendix);
+		edit.insert(lineRanges[lineRanges.length - 1].range.end, appendix);
 	}
 }
 
