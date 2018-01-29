@@ -45,10 +45,76 @@ function run(callback: () => void) {
 
 function transformLines(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, callback: (lines: string[]) => string[]) {
 	var document = editor.document;
+
+	var lineRanges = getLineRanges(editor);
+	if (!lineRanges)
+		return;
+
+	var lineRangeTexts = lineRanges.map(function(lineRange) {
+		return document.getText(lineRange.range);
+	});
+	lineRangeTexts = callback(lineRangeTexts);
+
+	for (var i = 0; i < lineRanges.length && i < lineRangeTexts.length; ++i)
+		edit.replace(lineRanges[i].range, lineRangeTexts[i]);
+
+	// delete lines
+	if (lineRanges.length > lineRangeTexts.length ) {
+
+		// Account for the last line which may not contain a trailing newline.
+		// Simple deletion of its `rangeIncludingLineBreak` would leave an empty line.
+		// Instead, we have to find a preceding newline to delete,
+		// being careful not to cause intersecting ranges.
+		//
+		//   line to preserve\n <<< this is the newline to delete
+		//   line to remove\n
+		//   line to remove\n
+		//   line to remove <<< end of document, no trailing newline
+		//
+		var i = lineRanges.length - 1;
+		var lastLineRange = lineRanges[i];
+		if (lastLineRange.rangeIncludingLineBreak.isEqual(lastLineRange.range)) {
+			while (i > lineRangeTexts.length && lineRanges[i - 1].lineNumber == lineRanges[i].lineNumber - 1) i--;
+			var borderLineRange = lineRanges[i];
+			if (borderLineRange.lineNumber > 0)
+				borderLineRange.rangeIncludingLineBreak = borderLineRange.rangeIncludingLineBreak.with(
+					document.lineAt(borderLineRange.lineNumber - 1).range.end);
+		}
+
+		for (var i = lineRangeTexts.length; i < lineRanges.length; ++i) {
+			// delete the line altogether
+			edit.delete(lineRanges[i].rangeIncludingLineBreak);
+		}
+	}
+
+	if (lineRangeTexts.length > lineRanges.length) {
+		var appendix = "\n" + lineRangeTexts.slice(lineRanges.length).join("\n");
+		edit.insert(lineRanges[lineRanges.length - 1].range.end, appendix);
+	}
+}
+
+
+interface LineRange { lineNumber: number, range: vscode.Range, rangeIncludingLineBreak: vscode.Range }
+
+function getLineRanges(editor: vscode.TextEditor): LineRange[]|null {
+	var selections = editor.selections;
+	if (selections.length == 1 && !selections[0].isEmpty) {
+		// nothing to do with a single non-empty selection
+		return null;
+	}
+
+	var document = editor.document;
 	var lineCount = document.lineCount;
 
-	var selections = editor.selections;
-	if (!selections.length) return;
+	if (selections.length < 2) {
+		// process the whole file
+		var lineRanges: LineRange[] = [];
+		for (var lineNumber = 0; lineNumber < lineCount; lineNumber++) {
+			var line = document.lineAt(lineNumber);
+			lineRanges.push({ lineNumber, range: line.range, rangeIncludingLineBreak: line.rangeIncludingLineBreak });
+		}
+		return lineRanges;
+	}
 
 	// lineNumbersMap <- map of line numbers
 	var lineNumbersMap: {[lineNumber: number]: true} = {};
@@ -66,35 +132,22 @@ function transformLines(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
 			pos = document.lineAt(pos.line - 1).range.end) { }
 		var endLine = pos.line;
 
-		for (var line = startLine; line <= endLine; ++line)
-			lineNumbersMap[line] = true;
+		for (var lineNumber = startLine; lineNumber <= endLine; ++lineNumber)
+			lineNumbersMap[lineNumber] = true;
 	});
 
 	// lineNumbers <- sorted array of line numbers
 	var stringLineNumbers = Object.keys(lineNumbersMap);
-	if (stringLineNumbers.length < 2) return;
+	if (stringLineNumbers.length < 2)
+		return null;
 	var lineNumbers = stringLineNumbers.map(function(stringLineNumber) { return parseInt(stringLineNumber); });
 	lineNumbers.sort(function(a, b) { return a - b; });
 
 	// lineRanges <- sorted array of vscode ranges
-	var lineRanges = lineNumbers.map(function(lineNumber) {
+	return lineNumbers.map(function(lineNumber) {
 		var line = document.lineAt(lineNumber);
-		return { range: line.range, rangeIncludingLineBreak: line.rangeIncludingLineBreak };
+		return { lineNumber, range: line.range, rangeIncludingLineBreak: line.rangeIncludingLineBreak };
 	});
-
-	var lineRangeTexts = lineRanges.map(function(lineRange) {
-		return document.getText(lineRange.range);
-	});
-	lineRangeTexts = callback(lineRangeTexts);
-
-	for (var i = 0; i < lineRanges.length && i < lineRangeTexts.length; ++i)
-		edit.replace(lineRanges[i].range, lineRangeTexts[i]);
-	for (var i = lineRangeTexts.length; i < lineRanges.length; ++i)
-		edit.delete(lineRanges[i].rangeIncludingLineBreak); // delete the line altogether
-	if (lineRangeTexts.length > lineRanges.length) {
-		var appendix = "\n" + lineRangeTexts.slice(lineRanges.length).join("\n");
-		edit.insert(lineRanges[lineRanges.length - 1].range.end, appendix);
-	}
 }
 
 
