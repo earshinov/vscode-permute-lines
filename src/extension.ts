@@ -105,11 +105,21 @@ function getLineRanges(editor: vscode.TextEditor): LineRange[]|null {
 
 	var document = editor.document;
 	var lineCount = document.lineCount;
+	if (lineCount <= 0)
+		return null;
 
 	if (selections.length < 2) {
 		// process the whole file
+
+		// ignore empty lines at the end of file
+		for (var pos = document.lineAt(lineCount - 1).range.end;
+			pos.line > 0 && pos.character == 0;
+			pos = document.lineAt(pos.line - 1).range.end) { }
+		var endLine = pos.line;
+
+		// lineRanges <- sorted array of vscode ranges
 		var lineRanges: LineRange[] = [];
-		for (var lineNumber = 0; lineNumber < lineCount; lineNumber++) {
+		for (var lineNumber = 0; lineNumber <= endLine; lineNumber++) {
 			var line = document.lineAt(lineNumber);
 			lineRanges.push({ lineNumber, range: line.range, rangeIncludingLineBreak: line.rangeIncludingLineBreak });
 		}
