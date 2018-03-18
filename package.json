@@ -3,7 +3,7 @@
     "displayName": "Permute Lines",
     "description": "Line operations from Sublime Text now available in Visual Studio Code",
     "icon": "doc/logo.png",
-    "version": "0.0.5",
+    "version": "0.0.8",
     "publisher": "earshinov",
     "repository": "https://github.com/earshinov/vscode-permute-lines/",
     "license": "MIT",
