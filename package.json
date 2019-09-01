@@ -42,6 +42,7 @@
     },
     "devDependencies": {
         "typescript": "^2.0.3",
+        "vsce": "^1.66.0",
         "vscode": "^1.0.0"
     }
 }
