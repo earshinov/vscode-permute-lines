@@ -59,7 +59,7 @@ function transformLines(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
 		edit.replace(lineRanges[i].range, lineRangeTexts[i]);
 
 	// delete lines
-	if (lineRanges.length > lineRangeTexts.length ) {
+	if (lineRanges.length > lineRangeTexts.length) {
 
 		// Account for the last line which may not contain a trailing newline.
 		// Simple deletion of its `rangeIncludingLineBreak` would leave an empty line.
@@ -97,18 +97,13 @@ function transformLines(editor: vscode.TextEditor, edit: vscode.TextEditorEdit, 
 interface LineRange { lineNumber: number, range: vscode.Range, rangeIncludingLineBreak: vscode.Range }
 
 function getLineRanges(editor: vscode.TextEditor): LineRange[]|null {
-	var selections = editor.selections;
-	if (selections.length == 1 && !selections[0].isEmpty) {
-		// nothing to do with a single non-empty selection
-		return null;
-	}
-
 	var document = editor.document;
 	var lineCount = document.lineCount;
 	if (lineCount <= 0)
 		return null;
 
-	if (selections.length < 2) {
+	var selections = editor.selections;
+	if (selections.length === 0 || selections.length === 1 && selections[0].isEmpty) {
 		// process the whole file
 
 		// ignore empty lines at the end of file
@@ -129,20 +124,8 @@ function getLineRanges(editor: vscode.TextEditor): LineRange[]|null {
 	// lineNumbersMap <- map of line numbers
 	var lineNumbersMap: {[lineNumber: number]: true} = {};
 	selections.forEach(function(selection) {
-
 		// ignore empty lines at the beginning of selection
-		for (var pos = selection.start;
-			pos.line + 1 < lineCount && pos.character == document.lineAt(pos).range.end.character;
-			pos = new vscode.Position(pos.line + 1, 0)) { }
-		var startLine = pos.line;
-
-		// ignore empty lines at the end of selection
-		for (var pos = selection.end;
-			pos.line > 0 && pos.character == 0;
-			pos = document.lineAt(pos.line - 1).range.end) { }
-		var endLine = pos.line;
-
-		for (var lineNumber = startLine; lineNumber <= endLine; ++lineNumber)
+		for (var lineNumber = selection.start.line; lineNumber <= selection.end.line; ++lineNumber)
 			lineNumbersMap[lineNumber] = true;
 	});
 

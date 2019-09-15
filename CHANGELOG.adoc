@@ -1,0 +1,26 @@
+= Changelog
+:nofooter:
+:linkattrs:
+
+All notable changes to this project will be documented in this file.
+
+The format is based on https://keepachangelog.com/en/1.0.0/[Keep a Changelog^],
+and this project adheres to https://semver.org/spec/v2.0.0.html[Semantic Versioning^].
+
+== [[v1.1.0]][1.1.0] - 2019-10-20
+
+Enhancements:
+
+- "Permute Lines > Unique" command now works as expected in all selection scenarios:
++
+[options="header,autowidth"]
+|====
+|Selection|Processed lines
+|No selection|The whole file
+|Single selection spanning multiple lines|Lines which are selected (wholly or partially)
+|Multiple selections spanning multiple lines|Lines which either have a cursor or selected (wholly or partially)
+|====
+
+== [[v1.0.0]][1.0.0] - 2019-09-01
+
+Initial non-beta release

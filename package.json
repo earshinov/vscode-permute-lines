@@ -3,7 +3,7 @@
     "displayName": "Permute Lines",
     "description": "Reverse, Unique, Shuffle lines as in Sublime Text",
     "icon": "doc/logo.png",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "publisher": "earshinov",
     "repository": "https://github.com/earshinov/vscode-permute-lines/",
     "license": "MIT",
